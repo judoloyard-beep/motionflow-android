@@ -31,6 +31,11 @@ jobs:
 
       - name: Add Android
         run: npx cap add android
+        
+      - name: Add Camera Permission
+        run: |
+          sed -i '/<manifest/a\    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
+          
 
       - name: Sync Android
         run: npx cap sync android
