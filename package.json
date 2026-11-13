@@ -4,8 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "vite --config vite.config.js"
-  },
+    "build": "vite build --config vite.config.js"
   "dependencies": {
     "@capacitor/core": "^6.2.0",
     "@capacitor/android": "^6.2.0",
