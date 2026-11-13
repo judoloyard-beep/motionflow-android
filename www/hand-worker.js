@@ -1,3 +1,4 @@
+JavaScript
 
 import {
   FilesetResolver,
@@ -5,11 +6,17 @@ import {
 } from "@mediapipe/tasks-vision";
 
 let detector = null;
+let initializing = false;
+let ready = false;
 
 self.onmessage = async (event) => {
   const { type, bitmap, timestamp } = event.data;
 
   if (type === "init") {
+    if (initializing || ready) return;
+
+    initializing = true;
+
     try {
       const vision = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
@@ -25,35 +32,52 @@ self.onmessage = async (event) => {
         numHands: 1
       };
 
+      let engine = "GPU";
+
       try {
         detector = await HandLandmarker.createFromOptions(
-          vision, options
+          vision,
+          options
         );
-        self.postMessage({ type: "ready", engine: "GPU" });
-
       } catch (gpuError) {
-        console.warn("GPU unavailable:", gpuError);
+        console.warn("GPU unavailable, switching to CPU", gpuError);
 
         options.baseOptions.delegate = "CPU";
 
         detector = await HandLandmarker.createFromOptions(
-          vision, options
+          vision,
+          options
         );
 
-        self.postMessage({ type: "ready", engine: "CPU" });
+        engine = "CPU";
       }
+
+      ready = true;
+
+      self.postMessage({
+        type: "ready",
+        engine
+      });
 
     } catch (error) {
       self.postMessage({
         type: "error",
-        message: error.message
+        message: error.message || "Model initialization failed"
       });
+
+    } finally {
+      initializing = false;
     }
 
     return;
   }
 
-  if (type === "frame" && detector) {
+  if (type === "frame") {
+    if (!ready || !detector) {
+      bitmap?.close();
+      return;
+    }
+
     try {
       const result = detector.detectForVideo(
         bitmap,
@@ -69,7 +93,7 @@ self.onmessage = async (event) => {
     } catch (error) {
       self.postMessage({
         type: "error",
-        message: error.message
+        message: error.message || "Detection failed"
       });
 
     } finally {
