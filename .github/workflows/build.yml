@@ -1,8 +1,7 @@
-YAML
 
 name: Build MotionFlow APK
 
-on:
+"on":
   workflow_dispatch:
 
 permissions:
