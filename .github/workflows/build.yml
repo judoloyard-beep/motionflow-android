@@ -1,28 +1,33 @@
+YAML
+
 name: Build MotionFlow APK
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm install
 
       - name: Build Web App
@@ -30,11 +35,10 @@ jobs:
 
       - name: Add Android
         run: npx cap add android
-        
+
       - name: Add Camera Permission
         run: |
           sed -i '/<manifest/a\    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
-          
 
       - name: Sync Android
         run: npx cap sync android
