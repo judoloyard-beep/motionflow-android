@@ -1,33 +1,37 @@
-HTML
 
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MotionFlow</title>
+<title>MotionFlow Air Mouse</title>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+
 body{
   background:#080b14;
   color:white;
   font-family:Arial,sans-serif;
-  padding:20px;
+  padding:15px;
 }
-header{text-align:center;padding:20px}
-h1{color:#9b83ff;letter-spacing:5px}
-header p{color:#8991aa;font-size:12px;margin-top:8px}
+
+header{text-align:center;padding:15px}
+h1{color:#a18aff;letter-spacing:4px}
+header p{color:#8991aa;font-size:11px;margin-top:8px}
+
 .camera{
   position:relative;
   width:100%;
   aspect-ratio:4/3;
+  max-height:220px;
   background:#111827;
   border:1px solid #7661ff;
-  border-radius:18px;
+  border-radius:16px;
   overflow:hidden;
-  margin-top:20px;
+  margin-top:12px;
 }
+
 video,canvas{
   position:absolute;
   width:100%;
@@ -35,40 +39,147 @@ video,canvas{
   object-fit:cover;
   transform:scaleX(-1);
 }
+
 canvas{z-index:2}
+
 .panel{
   background:#151a2b;
-  border-radius:15px;
-  padding:20px;
-  margin-top:18px;
+  border-radius:14px;
+  padding:16px;
+  margin-top:14px;
 }
-.small{font-size:11px;color:#929bb4}
+
+.small{font-size:10px;color:#929bb4}
+
 #gesture{
   color:#a997ff;
-  font-size:24px;
+  font-size:22px;
   font-weight:bold;
-  margin-top:9px;
+  margin-top:8px;
 }
-#details{color:#b4bdd2;margin-top:8px;font-size:13px}
+
+#details{color:#b4bdd2;margin-top:7px;font-size:12px}
+
 button{
-  width:100%;
-  padding:16px;
-  margin-top:15px;
   border:0;
-  border-radius:12px;
-  background:#7862ff;
   color:white;
   font-weight:bold;
+  cursor:pointer;
 }
+
+#start{
+  width:100%;
+  padding:15px;
+  margin-top:14px;
+  border-radius:12px;
+  background:#7862ff;
+}
+
 button:disabled{opacity:.5}
-#points{color:#a997ff;margin-top:12px;font-size:13px}
+
+.workspace{
+  position:relative;
+  height:340px;
+  overflow:hidden;
+  margin-top:15px;
+  border:1px solid #51448b;
+  border-radius:17px;
+  background:
+    radial-gradient(circle at 50% 50%,#242044,#101321 75%);
+}
+
+.workspace-head{
+  padding:13px;
+  color:#b8aaff;
+  font-size:12px;
+}
+
+.tiles{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  padding:10px;
+}
+
+.tile{
+  min-height:100px;
+  border:1px solid #49416f;
+  border-radius:13px;
+  background:#191d31;
+  padding:12px;
+  text-align:left;
+  transition:.15s;
+}
+
+.tile:active{
+  background:#44347e;
+}
+
+.tile .emoji{
+  font-size:26px;
+  display:block;
+  margin-bottom:9px;
+}
+
+.tile span:last-child{
+  font-size:11px;
+  color:#aeb6cf;
+}
+
+#cursor{
+  position:absolute;
+  z-index:20;
+  width:25px;
+  height:25px;
+  border:2px solid #c3a8ff;
+  border-radius:50%;
+  background:#9b70ff55;
+  box-shadow:0 0 12px #a17aff,0 0 25px #754cff;
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  display:none;
+}
+
+#cursor.pinching{
+  background:#ffffff;
+  box-shadow:0 0 20px #fff;
+  transform:translate(-50%,-50%) scale(.7);
+}
+
+#toast{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#272044;
+  border:1px solid #8068ff;
+  border-radius:12px;
+  padding:12px 18px;
+  font-size:12px;
+  opacity:0;
+  transition:.2s;
+  z-index:50;
+  pointer-events:none;
+  white-space:nowrap;
+}
+
+#toast.show{opacity:1}
+
+.hint{
+  color:#8e96ad;
+  font-size:11px;
+  line-height:1.6;
+  margin-top:12px;
+  text-align:center;
+}
 </style>
 </head>
 
 <body>
+
 <header>
   <h1>MOTIONFLOW</h1>
-  <p>REAL-TIME GESTURE CONTROL</p>
+  <p>AIR MOUSE TECHNOLOGY</p>
 </header>
 
 <div class="camera">
@@ -77,15 +188,64 @@ button:disabled{opacity:.5}
 </div>
 
 <div class="panel">
-  <div class="small">DETECTED GESTURE</div>
+  <div class="small">GESTURE STATUS</div>
   <div id="gesture">STANDBY</div>
-  <div id="details">Kamera belum aktif</div>
-  <div id="points">LANDMARKS: 0 / 21</div>
+  <div id="details">Aktifkan kamera untuk memulai</div>
+  <div class="small" id="fps" style="margin-top:10px">FPS: 0</div>
 </div>
 
-<button id="start">AKTIFKAN KAMERA</button>
+<button id="start">AKTIFKAN AIR MOUSE</button>
+
+<div class="panel">
+  <div class="small">AIR MOUSE WORKSPACE</div>
+  <div style="font-size:18px;margin-top:7px">
+    Kendalikan dengan tangan
+  </div>
+
+  <div class="workspace" id="workspace">
+    <div class="workspace-head">
+      ✦ VIRTUAL CONTROL PANEL
+    </div>
+
+    <div class="tiles">
+      <button class="tile" data-action="dashboard">
+        <span class="emoji">📊</span>
+        Dashboard
+        <span>Buka panel utama</span>
+      </button>
+
+      <button class="tile" data-action="music">
+        <span class="emoji">🎵</span>
+        Music Player
+        <span>Kontrol musik</span>
+      </button>
+
+      <button class="tile" data-action="settings">
+        <span class="emoji">⚙️</span>
+        Settings
+        <span>Pengaturan aplikasi</span>
+      </button>
+
+      <button class="tile" data-action="ai">
+        <span class="emoji">🤖</span>
+        AI Assistant
+        <span>Panel asisten</span>
+      </button>
+    </div>
+
+    <div id="cursor"></div>
+  </div>
+
+  <div class="hint">
+    ☝️ Arahkan telunjuk untuk menggerakkan kursor<br>
+    🤏 Cubit jempol dan telunjuk untuk klik
+  </div>
+</div>
+
+<div id="toast"></div>
 
 <script type="module">
+
 import {
   HandLandmarker,
   FilesetResolver
@@ -94,16 +254,23 @@ import {
 const video=document.getElementById("video");
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
+
 const start=document.getElementById("start");
 const gesture=document.getElementById("gesture");
 const details=document.getElementById("details");
-const points=document.getElementById("points");
+const cursor=document.getElementById("cursor");
+const workspace=document.getElementById("workspace");
+const fpsText=document.getElementById("fps");
+const toast=document.getElementById("toast");
 
 let tracker=null;
 let stream=null;
 let running=false;
-let lastGesture="";
-let lastChange=0;
+let pinching=false;
+let lastClick=0;
+let lastFrame=0;
+let frames=0;
+let fpsTime=performance.now();
 
 const connections=[
 [0,1],[1,2],[2,3],[3,4],
@@ -115,31 +282,33 @@ const connections=[
 ];
 
 function classify(lm){
+
   const thumb=lm[4].y<lm[3].y;
   const index=lm[8].y<lm[6].y;
   const middle=lm[12].y<lm[10].y;
   const ring=lm[16].y<lm[14].y;
   const pinky=lm[20].y<lm[18].y;
 
-  if(thumb && !index && !middle && !ring && !pinky)
+  if(thumb&&!index&&!middle&&!ring&&!pinky)
     return "THUMBS UP";
 
-  if(index && middle && ring && pinky)
+  if(index&&middle&&ring&&pinky)
     return "OPEN PALM";
 
-  if(!index && !middle && !ring && !pinky)
+  if(!index&&!middle&&!ring&&!pinky)
     return "FIST";
 
   return "HAND DETECTED";
 }
 
 function drawHand(lm){
+
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  ctx.lineWidth=4;
+  ctx.lineWidth=3;
   ctx.strokeStyle="#9b82ff";
   ctx.shadowColor="#8b65ff";
-  ctx.shadowBlur=12;
+  ctx.shadowBlur=9;
 
   for(const [a,b] of connections){
     ctx.beginPath();
@@ -148,103 +317,243 @@ function drawHand(lm){
     ctx.stroke();
   }
 
-  ctx.shadowBlur=15;
   ctx.fillStyle="#ffffff";
 
   for(const p of lm){
     ctx.beginPath();
-    ctx.arc(p.x*canvas.width,p.y*canvas.height,4,0,Math.PI*2);
+    ctx.arc(
+      p.x*canvas.width,
+      p.y*canvas.height,
+      3,
+      0,
+      Math.PI*2
+    );
     ctx.fill();
   }
 
   ctx.shadowBlur=0;
 }
 
+function showToast(message){
+
+  toast.textContent=message;
+  toast.classList.add("show");
+
+  setTimeout(()=>{
+    toast.classList.remove("show");
+  },1400);
+}
+
+function moveCursor(lm){
+
+  const x=1-lm[8].x;
+  const y=lm[8].y;
+
+  cursor.style.display="block";
+  cursor.style.left=(x*100)+"%";
+  cursor.style.top=(y*100)+"%";
+
+  return {x,y};
+}
+
+function airClick(x,y){
+
+  const rect=workspace.getBoundingClientRect();
+
+  const screenX=rect.left+x*rect.width;
+  const screenY=rect.top+y*rect.height;
+
+  const target=document
+    .elementFromPoint(screenX,screenY)
+    ?.closest("[data-action]");
+
+  if(target){
+    target.click();
+  }
+}
+
+function handlePinch(lm,pos){
+
+  const dx=lm[4].x-lm[8].x;
+  const dy=lm[4].y-lm[8].y;
+
+  const distance=Math.sqrt(dx*dx+dy*dy);
+
+  const now=performance.now();
+
+  if(distance<0.045){
+
+    cursor.classList.add("pinching");
+
+    if(!pinching && now-lastClick>650){
+
+      pinching=true;
+      lastClick=now;
+
+      airClick(pos.x,pos.y);
+
+      gesture.textContent="AIR CLICK";
+      details.textContent="Perintah klik terdeteksi";
+    }
+
+  }else if(distance>0.075){
+
+    pinching=false;
+    cursor.classList.remove("pinching");
+
+  }
+}
+
 async function init(){
+
+  if(running)return;
+
   start.disabled=true;
-  start.textContent="MENYIAPKAN ENGINE...";
+  start.textContent="MEMUAT AI...";
 
   try{
+
     const vision=await FilesetResolver.forVisionTasks(
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
     );
 
     tracker=await HandLandmarker.createFromOptions(vision,{
+
       baseOptions:{
         modelAssetPath:
         "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
         delegate:"CPU"
       },
+
       runningMode:"VIDEO",
       numHands:1
+
     });
 
     stream=await navigator.mediaDevices.getUserMedia({
+
       audio:false,
+
       video:{
         facingMode:"user",
-        width:{ideal:640},
-        height:{ideal:480}
+        width:{ideal:480},
+        height:{ideal:360},
+        frameRate:{ideal:20,max:24}
       }
+
     });
 
     video.srcObject=stream;
+
     await video.play();
 
     canvas.width=video.videoWidth;
     canvas.height=video.videoHeight;
 
     running=true;
-    start.textContent="KAMERA AKTIF";
-    gesture.textContent="SCANNING...";
+
+    start.textContent="AIR MOUSE AKTIF";
+    gesture.textContent="SCANNING";
     details.textContent="Arahkan tangan ke kamera";
 
     requestAnimationFrame(loop);
 
-  }catch(e){
-    console.error(e);
+  }catch(error){
+
+    console.error(error);
+
     gesture.textContent="ERROR";
-    details.textContent=e.message;
+    details.textContent=error.message;
+
     start.disabled=false;
     start.textContent="COBA LAGI";
+
   }
 }
 
-function loop(){
+function loop(now){
+
   if(!running)return;
 
-  if(video.readyState>=2){
-    const result=tracker.detectForVideo(video,performance.now());
+  requestAnimationFrame(loop);
+
+  // Batasi proses AI sekitar 20 FPS
+  if(now-lastFrame<50)return;
+
+  lastFrame=now;
+
+  if(video.readyState<2)return;
+
+  const result=tracker.detectForVideo(video,now);
+
+  frames++;
+
+  if(now-fpsTime>=1000){
+
+    fpsText.textContent="FPS: "+frames;
+    frames=0;
+    fpsTime=now;
+
+  }
+
+  if(result.landmarks.length){
+
+    const lm=result.landmarks[0];
+
+    drawHand(lm);
+
+    const pos=moveCursor(lm);
+
+    const dx=lm[4].x-lm[8].x;
+    const dy=lm[4].y-lm[8].y;
+
+    const distance=Math.sqrt(dx*dx+dy*dy);
+
+    handlePinch(lm,pos);
+
+    if(distance>=0.045){
+      gesture.textContent=classify(lm);
+      details.textContent="Air Mouse siap digunakan";
+    }
+
+  }else{
 
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    if(result.landmarks.length){
-      const lm=result.landmarks[0];
-      drawHand(lm);
+    cursor.style.display="none";
+    cursor.classList.remove("pinching");
 
-      const detected=classify(lm);
-      const now=Date.now();
+    gesture.textContent="SEARCHING";
+    details.textContent="Arahkan tangan ke kamera";
 
-      if(detected!==lastGesture && now-lastChange>500){
-        lastGesture=detected;
-        lastChange=now;
-      }
+    pinching=false;
 
-      gesture.textContent=lastGesture;
-      details.textContent="Tangan berhasil terdeteksi";
-      points.textContent="LANDMARKS: "+lm.length+" / 21";
-    }else{
-      gesture.textContent="SEARCHING...";
-      details.textContent="Belum ada tangan terdeteksi";
-      points.textContent="LANDMARKS: 0 / 21";
-      lastGesture="";
-    }
   }
 
-  requestAnimationFrame(loop);
 }
 
+// Tombol virtual di workspace
+document.querySelectorAll("[data-action]").forEach(button=>{
+
+  button.addEventListener("click",()=>{
+
+    const action=button.dataset.action;
+
+    const messages={
+      dashboard:"Dashboard berhasil dibuka",
+      music:"Music Player dipilih",
+      settings:"Settings dipilih",
+      ai:"AI Assistant dipilih"
+    };
+
+    showToast(messages[action]);
+
+  });
+
+});
+
 start.addEventListener("click",init);
+
 </script>
 </body>
 </html>
