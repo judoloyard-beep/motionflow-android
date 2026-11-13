@@ -15,18 +15,19 @@ const handEl = document.getElementById("hand");
 
 let stream = null;
 let worker = null;
+
 let running = false;
 let busy = false;
 let modelReady = false;
+
 let lastFrame = 0;
-let lastResultTime = 0;
 let frames = 0;
-let fpsTimer = 0;
+let fpsTimer = performance.now();
+
 let lastScrollY = null;
 let lastScrollTime = 0;
 let lastPinch = false;
 let lastGesture = "";
-let currentLandmarks = null;
 
 const connections = [
   [0,1],[1,2],[2,3],[3,4],
@@ -37,15 +38,17 @@ const connections = [
   [0,17]
 ];
 
-function setStatus(text) {
-  statusEl.textContent = text;
+function setStatus(value) {
+  statusEl.textContent = value;
 }
 
 function toast(message) {
   const el = document.getElementById("toast");
   el.textContent = message;
   el.classList.add("show");
+
   clearTimeout(toast.timer);
+
   toast.timer = setTimeout(() => {
     el.classList.remove("show");
   }, 1500);
@@ -55,8 +58,13 @@ function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
-  canvas.width = Math.round(rect.width * dpr);
-  canvas.height = Math.round(rect.height * dpr);
+  const width = Math.round(rect.width * dpr);
+  const height = Math.round(rect.height * dpr);
+
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
@@ -73,24 +81,17 @@ function drawHand(points) {
 
   if (!points) return;
 
-  // Garis tangan neon
   ctx.lineWidth = 3;
   ctx.strokeStyle = "#a78bfa";
   ctx.shadowColor = "#8b5cf6";
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = 10;
 
   for (const [a, b] of connections) {
-    const p1 = points[a];
-    const p2 = points[b];
-
     ctx.beginPath();
-    ctx.moveTo(p1.x * width, p1.y * height);
-    ctx.lineTo(p2.x * width, p2.y * height);
+    ctx.moveTo(points[a].x * width, points[a].y * height);
+    ctx.lineTo(points[b].x * width, points[b].y * height);
     ctx.stroke();
   }
-
-  // Titik landmark
-  ctx.shadowBlur = 15;
 
   points.forEach((point, index) => {
     ctx.beginPath();
@@ -107,7 +108,6 @@ function drawHand(points) {
     ctx.fill();
   });
 
-  // Cursor telunjuk
   const tip = points[8];
 
   ctx.beginPath();
@@ -140,9 +140,7 @@ function recognize(points) {
   const ring = isFingerUp(points, 16, 14);
   const pinky = isFingerUp(points, 20, 18);
 
-  const thumbDistance = distance(points[4], points[5]);
-  const thumbUp = points[4].y < points[3].y &&
-                  thumbDistance > 0.12;
+  const thumbUp = points[4].y < points[3].y;
 
   const pinchDistance = distance(points[4], points[8]);
   const pinching = pinchDistance < 0.055;
@@ -165,8 +163,7 @@ function recognize(points) {
   return {
     gesture,
     pinching,
-    fingersOpen,
-    index
+    fingersOpen
   };
 }
 
@@ -189,8 +186,10 @@ function handleGesture(points) {
 
   updateGestureUI(data);
 
-  if (data.gesture !== lastGesture &&
-      data.gesture !== "Tidak dikenal") {
+  if (
+    data.gesture !== lastGesture &&
+    data.gesture !== "Tidak dikenal"
+  ) {
     lastGesture = data.gesture;
     toast("Gestur: " + data.gesture);
   }
@@ -199,32 +198,38 @@ function handleGesture(points) {
     lastGesture = "";
   }
 
-  // Pinch: klik tombol workspace secara berurutan
+  // Air Click
   if (data.pinching && !lastPinch) {
-    toast("✦ Air Click!");
+    const buttons = [...document.querySelectorAll(".app-btn")];
 
-    const buttons = [
-      ...document.querySelectorAll(".app-btn")
-    ];
+    if (buttons.length) {
+      const next = (handleGesture.selected ?? -1) + 1;
 
-    const next = (handleGesture.selected || -1) + 1;
-    handleGesture.selected = next % buttons.length;
+      handleGesture.selected = next % buttons.length;
 
-    buttons.forEach((button, index) => {
-      button.classList.toggle("active", index === handleGesture.selected);
-    });
+      buttons.forEach((button, index) => {
+        button.classList.toggle(
+          "active",
+          index === handleGesture.selected
+        );
+      });
 
-    buttons[handleGesture.selected]?.click();
+      buttons[handleGesture.selected].click();
+      toast("✦ Air Click!");
+    }
   }
 
   lastPinch = data.pinching;
 
-  // Air Scroll: gerakkan telapak ke atas/bawah
+  // Air Scroll
   if (data.gesture === "Telapak terbuka") {
     const palmY = points[9].y;
     const now = performance.now();
 
-    if (lastScrollY !== null && now - lastScrollTime > 100) {
+    if (
+      lastScrollY !== null &&
+      now - lastScrollTime > 100
+    ) {
       const delta = palmY - lastScrollY;
 
       if (Math.abs(delta) > 0.035) {
@@ -247,39 +252,42 @@ function handleWorkerMessage(event) {
   const data = event.data;
 
   if (data.type === "ready") {
-  modelReady = true;
-  engineEl.textContent = data.engine;
-  cameraLabel.textContent = "TRACKING ACTIVE";
-  setStatus("SYSTEM ONLINE");
-  toast("MotionFlow siap!");
-  }
+    modelReady = true;
+
     engineEl.textContent = data.engine;
     cameraLabel.textContent = "TRACKING ACTIVE";
+
     setStatus("SYSTEM ONLINE");
     toast("MotionFlow siap!");
+
+    return;
   }
 
   if (data.type === "result") {
     busy = false;
     frames++;
 
-    currentLandmarks = data.landmarks;
-
-    if (currentLandmarks) {
+    if (data.landmarks) {
       handEl.textContent = "DETECTED";
-      drawHand(currentLandmarks);
-      handleGesture(currentLandmarks);
+
+      drawHand(data.landmarks);
+      handleGesture(data.landmarks);
     } else {
       handEl.textContent = "NONE";
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       lastPinch = false;
       lastGesture = "";
       lastScrollY = null;
     }
+
+    return;
   }
 
   if (data.type === "error") {
     busy = false;
+
     console.error(data.message);
     toast("Tracking error: " + data.message);
     setStatus("TRACKING ERROR");
@@ -291,9 +299,15 @@ function sendFrame(now) {
 
   requestAnimationFrame(sendFrame);
 
-  // Batasi proses kamera sekitar 12 FPS
+  if (now - fpsTimer >= 1000) {
+    fpsEl.textContent = frames;
+    frames = 0;
+    fpsTimer = now;
+  }
+
   if (now - lastFrame < 80) return;
-  if (busy || !modelReady || video.readyState < 2 || !worker) return;
+  if (!modelReady || busy || !worker) return;
+  if (video.readyState < 2) return;
 
   lastFrame = now;
   busy = true;
@@ -316,17 +330,12 @@ function sendFrame(now) {
       busy = false;
       console.error(error);
     });
-
-  if (now - fpsTimer >= 1000) {
-    fpsEl.textContent = frames;
-    frames = 0;
-    fpsTimer = now;
-  }
 }
 
 async function startTracking() {
   try {
     startBtn.disabled = true;
+
     setStatus("STARTING...");
     cameraLabel.textContent = "REQUESTING CAMERA";
 
@@ -343,6 +352,8 @@ async function startTracking() {
     video.srcObject = stream;
     await video.play();
 
+    resizeCanvas();
+
     worker = new Worker(
       new URL("./hand-worker.js", import.meta.url),
       { type: "module" }
@@ -352,6 +363,9 @@ async function startTracking() {
 
     worker.onerror = error => {
       console.error(error);
+      busy = false;
+      modelReady = false;
+
       toast("Worker gagal dijalankan");
       setStatus("WORKER ERROR");
     };
@@ -365,17 +379,14 @@ async function startTracking() {
 
   } catch (error) {
     console.error(error);
+
     toast("Gagal membuka kamera: " + error.message);
-    setStatus("CAMERA ERROR");
-    startBtn.disabled = false;
+
     stopTracking();
   }
 }
 
 function stopTracking() {
-  running = false;
-  busy = false;
-  function stopTracking() {
   running = false;
   busy = false;
   modelReady = false;
@@ -391,6 +402,7 @@ function stopTracking() {
   }
 
   video.srcObject = null;
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   fpsEl.textContent = "0";
@@ -399,6 +411,10 @@ function stopTracking() {
 
   cameraLabel.textContent = "CAMERA STANDBY";
   setStatus("SYSTEM OFFLINE");
+
+  lastGesture = "";
+  lastPinch = false;
+  lastScrollY = null;
 
   startBtn.disabled = false;
   stopBtn.disabled = true;
@@ -415,9 +431,5 @@ document.querySelectorAll(".app-btn").forEach(button => {
 
 window.addEventListener("beforeunload", stopTracking);
 
-if (!navigator.mediaDevices?.getUserMedia) {
-  toast("Browser tidak mendukung kamera");
-}
-
 console.log("MotionFlow V2 initialized");
-          
+  
