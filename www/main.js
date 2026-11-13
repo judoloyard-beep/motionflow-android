@@ -247,6 +247,12 @@ function handleWorkerMessage(event) {
   const data = event.data;
 
   if (data.type === "ready") {
+  modelReady = true;
+  engineEl.textContent = data.engine;
+  cameraLabel.textContent = "TRACKING ACTIVE";
+  setStatus("SYSTEM ONLINE");
+  toast("MotionFlow siap!");
+  }
     engineEl.textContent = data.engine;
     cameraLabel.textContent = "TRACKING ACTIVE";
     setStatus("SYSTEM ONLINE");
@@ -287,7 +293,7 @@ function sendFrame(now) {
 
   // Batasi proses kamera sekitar 12 FPS
   if (now - lastFrame < 80) return;
-  if (busy || video.readyState < 2 || !worker) return;
+  if (busy || !modelReady || video.readyState < 2 || !worker) return;
 
   lastFrame = now;
   busy = true;
@@ -369,6 +375,10 @@ async function startTracking() {
 function stopTracking() {
   running = false;
   busy = false;
+  function stopTracking() {
+  running = false;
+  busy = false;
+  modelReady = false;
 
   if (stream) {
     stream.getTracks().forEach(track => track.stop());
