@@ -17,6 +17,7 @@ let stream = null;
 let worker = null;
 let running = false;
 let busy = false;
+let modelReady = false;
 let lastFrame = 0;
 let lastResultTime = 0;
 let frames = 0;
