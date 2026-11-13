@@ -1,0 +1,17 @@
+
+{
+  "name": "motionflow-android",
+  "version": "1.0.0",
+  "description": "MotionFlow Gesture Control",
+  "private": true,
+  "scripts": {
+    "build": "echo MotionFlow ready"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/android": "^6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}
