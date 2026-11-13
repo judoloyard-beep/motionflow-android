@@ -1,0 +1,7 @@
+
+{
+  "appId": "com.senko.motionflow",
+  "appName": "MotionFlow",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
