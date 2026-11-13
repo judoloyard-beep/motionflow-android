@@ -9,6 +9,7 @@ const stopBtn = document.getElementById("stopBtn");
 const statusEl = document.getElementById("status");
 const cameraLabel = document.getElementById("cameraLabel");
 const toastEl = document.getElementById("toast");
+alert("MAIN JS BERHASIL DIMUAT");
 
 let stream = null;
 let running = false;
